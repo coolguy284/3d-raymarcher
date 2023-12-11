@@ -136,7 +136,9 @@
           lastFrameDuration = (now - lastFrameTime) / 1000;
           lastFrameTime = now;
           
-          await new Promise(r => requestAnimationFrame(r));
+          for (let i = 0; i < 5; i++) {
+            await new Promise(r => requestAnimationFrame(r));
+          }
         }
       };
       

@@ -2,11 +2,13 @@
 
 precision highp float;
 
-const float STEP_SIZE = 0.05;
-const int MAX_STEPS = 1000;
+const float STEP_SIZE = 0.04;
+const int MAX_STEPS = 400;
+const float MAX_RAYTRACE_DIST = STEP_SIZE * float(MAX_STEPS);
 const vec3 BACKGROUND_COLOR = vec3(0.0, 0.0, 0.0);
 const vec3 INSIDE_COLOR = vec3(0.0, 0.0, 0.0);
 const vec3 LIGHT_COLOR = vec3(1.0, 1.0, 1.0);
+const vec3 ZERO_COLOR = vec3(0.0, 0.0, 0.0);
 
 uniform vec2 iResolution;
 
@@ -132,13 +134,40 @@ LightResult checkLightEverPresent(LightColor color, vec3 pos) {
 LightResult checkLightPointSource(vec3 posLight, LightColor color, vec3 pos) {
   LightResult lightResult;
   
-  lightResult.reached = false;
+  vec3 vecToLight = -(pos - posLight);
+  
+  if (length(vecToLight) > MAX_RAYTRACE_DIST) {
+    lightResult.reached = false;
+  } else {
+    vec3 currentPos = pos;
+    vec3 lightStep = normalize(vecToLight) * STEP_SIZE;
+    bool blocked = false;
+    
+    for (int i = 0; i < MAX_STEPS; i++) {
+      currentPos += lightStep;
+      
+      CollisionResult collisionResult = checkCollision(currentPos);
+      
+      if (collisionResult.collision) {
+        blocked = true;
+        break;
+      }
+    }
+    
+    if (blocked) {
+      lightResult.reached = false;
+    } else {
+      lightResult.reached = true;
+      lightResult.color = color;
+    }
+  }
+  
   
   return lightResult;
 }
 
 vec3 raytraceStepToLights(vec3 pos) {
-  vec3 cumulativeLightColor = vec3(0.0, 0.0, 0.0);
+  vec3 cumulativeLightColor = ZERO_COLOR;
   
   LightResult lightResult;
   
@@ -149,7 +178,7 @@ vec3 raytraceStepToLights(vec3 pos) {
   if (lightResult.reached) cumulativeLightColor += lightResult.color.color;
   
   color.color = vec3(1.0, 1.0, 1.0);
-  lightResult = checkLightPointSource(vec3(0.0, 10.0, 0.0), color, pos);
+  lightResult = checkLightPointSource(vec3(0.0, 2.0, 0.0), color, pos);
   if (lightResult.reached) cumulativeLightColor += lightResult.color.color;
   
   return cumulativeLightColor;
@@ -161,16 +190,19 @@ vec3 getRaytraceColor(vec3 currentPos, vec3 stepDir) {
   CollisionResult collisionResult = checkCollision(currentPos);
   
   if (collisionResult.collision) {
-    return INSIDE_COLOR;
+    return collisionResult.color.diffuseColor * raytraceStepToLights(currentPos);
   }
   
+  vec3 pastPos;
+  
   for (int i = 0; i < MAX_STEPS; i++) {
+    pastPos = currentPos;
     currentPos += stepDir;
     
     CollisionResult collisionResult = checkCollision(currentPos);
     
     if (collisionResult.collision) {
-      return collisionResult.color.diffuseColor * raytraceStepToLights(currentPos);
+      return collisionResult.color.diffuseColor * raytraceStepToLights(pastPos);
     }
   }
   
