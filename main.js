@@ -66,11 +66,13 @@
       let FOV = pi * 0.5;
       let MOUSE_SENSITIVITY = 1.5;
       let MOVEMENT_SPEED = 1.0;
+      let SPEED_BOOST = 10;
       
       let pos = new Vec3D(0, 1, 0);
       let elev = 0, azim = 0;
       let pointerLocked = false;
       let currentKeys = new Set();
+      let currentMouse = new Set();
       let lastFrameTime = Date.now();
       let lastFrameDuration = 0;
       
@@ -79,39 +81,45 @@
       let updateMovementVars = () => {
         let facingAngle = Renderer3D.convertAngleToStepDirection2D(elev, azim);
         
-        if (currentKeys.has('w')) {
+        let posDelta = MOVEMENT_SPEED * lastFrameDuration;
+        
+        if (currentMouse.has(1)) {
+          posDelta *= SPEED_BOOST;
+        }
+        
+        if (currentKeys.has('KeyW')) {
           pos = pos.add(
-            facingAngle.forwardDirection.scalarMult(MOVEMENT_SPEED * lastFrameDuration)
+            facingAngle.forwardDirection.scalarMult(posDelta)
           );
         }
         
-        if (currentKeys.has('s')) {
+        if (currentKeys.has('KeyS')) {
           pos = pos.add(
-            facingAngle.forwardDirection.scalarMult(-MOVEMENT_SPEED * lastFrameDuration)
+            facingAngle.forwardDirection.scalarMult(-posDelta)
           );
         }
         
-        if (currentKeys.has('d')) {
+        if (currentKeys.has('KeyD')) {
           pos = pos.add(
-            facingAngle.rightDirection.scalarMult(MOVEMENT_SPEED * lastFrameDuration)
+            facingAngle.rightDirection.scalarMult(posDelta)
           );
         }
         
-        if (currentKeys.has('a')) {
+        if (currentKeys.has('KeyA')) {
           pos = pos.add(
-            facingAngle.rightDirection.scalarMult(-MOVEMENT_SPEED * lastFrameDuration)
+            facingAngle.rightDirection.scalarMult(-posDelta)
           );
         }
         
-        if (currentKeys.has(' ')) {
+        if (currentKeys.has('Space')) {
           pos = pos.add(
-            facingAngle.upDirection.scalarMult(MOVEMENT_SPEED * lastFrameDuration)
+            facingAngle.upDirection.scalarMult(posDelta)
           );
         }
         
-        if (currentKeys.has('Shift')) {
+        if (currentKeys.has('ShiftLeft')) {
           pos = pos.add(
-            facingAngle.upDirection.scalarMult(-MOVEMENT_SPEED * lastFrameDuration)
+            facingAngle.upDirection.scalarMult(-posDelta)
           );
         }
       }
@@ -163,11 +171,26 @@
       });
       
       document.addEventListener('keydown', evt => {
-        currentKeys.add(evt.key);
+        currentKeys.add(evt.code);
+        console.log(currentKeys);
+        if (!/^F\d+$/.test(evt.code)) {
+          evt.preventDefault();
+        }
       });
       
       document.addEventListener('keyup', evt => {
-        currentKeys.delete(evt.key);
+        currentKeys.delete(evt.code);
+        if (!/^F\d+$/.test(evt.code)) {
+          evt.preventDefault();
+        }
+      });
+      
+      document.addEventListener('mousedown', evt => {
+        currentMouse.add(evt.button);
+      });
+      
+      document.addEventListener('mouseup', evt => {
+        currentMouse.delete(evt.button);
       });
       
       await draw();

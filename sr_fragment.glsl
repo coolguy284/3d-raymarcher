@@ -3,7 +3,7 @@
 precision highp float;
 
 const float STEP_SIZE = 0.05;
-const int MAX_STEPS = 300;
+const int MAX_STEPS = 1000;
 const vec3 BACKGROUND_COLOR = vec3(0.0, 0.0, 0.0);
 
 uniform vec2 iResolution;
