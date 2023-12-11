@@ -1,0 +1,25 @@
+html, body, #canvas_container, canvas {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  flex-shrink: 1;
+}
+
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+}
+
+#canvas_container {
+  overflow: hidden;
+}
+
+canvas {
+  min-width: 0;
+  min-height: 0;
+}
