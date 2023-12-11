@@ -8,6 +8,7 @@ html, body, #canvas_container, canvas {
 html {
   height: 100%;
   overflow: hidden;
+  font-family: Arial, sans-serif;
 }
 
 body {
@@ -22,4 +23,12 @@ body {
 canvas {
   min-width: 0;
   min-height: 0;
+}
+
+#render_progress {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  color: white;
+  font-size: 40px;
 }

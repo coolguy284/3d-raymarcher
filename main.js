@@ -8,24 +8,39 @@ manager.setDrawMode('2d');
 manager.setBackgroundColor('black');
 
 renderer.setDimensions(manager.getWidth(), manager.getHeight());
-renderer.setPosAndRot(0, 0, 0, 0, 0);
+renderer.setFov(pi * 0.5);
+renderer.setPosAndRot(0, 1, 0, 0, 0);
 
 let y = 0;
 
-let draw = () => {
-  let drawStartTime = Date.now();
-  
-  for (; y < manager.getHeight(); y++) {
-    for (let x = 0; x < manager.getWidth(); x++) {
-      manager.setPixel(x, y, renderer.calculatePixelColor(x, y));
+let draw = async () => {
+  while (y < manager.getHeight()) {
+    let drawStartTime = Date.now();
+    
+    for (; y < manager.getHeight(); y++) {
+      for (let x = 0; x < manager.getWidth(); x++) {
+        manager.setPixel(x, y, renderer.calculatePixelColor(x, y));
+      }
+      
+      if ((Date.now() - drawStartTime) > MAX_FRAME_TIME) {
+        break;
+      }
     }
     
-    if ((Date.now() - drawStartTime) > MAX_FRAME_TIME) {
-      break;
-    }
+    setRenderProgress(y);
+    
+    await new Promise(r => requestAnimationFrame(r));
   }
   
-  if (y < manager.getHeight()) requestAnimationFrame(draw);
+  setRenderProgress(null);
 };
 
 draw();
+
+function setRenderProgress(y) {
+  if (y == null) {
+    render_progress.textContent = '';
+  } else {
+    render_progress.textContent = `${y}/${manager.getHeight()}`;
+  }
+}
