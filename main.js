@@ -1,5 +1,5 @@
 // js or shader
-let RENDER_PROFILE = 'js';
+let RENDER_PROFILE = 'shader';
 
 switch (RENDER_PROFILE) {
   case 'js': {
@@ -54,7 +54,7 @@ switch (RENDER_PROFILE) {
   }
   
   case 'shader':
-    let manager = new CanvasManager();
+    let manager = new CanvasManager(canvas_container);
     
     manager.setPixelRatio(2);
     manager.setDrawMode('shader');
