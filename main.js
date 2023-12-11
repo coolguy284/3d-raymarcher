@@ -3,11 +3,12 @@ let MAX_FRAME_TIME = 1 / 20;
 let manager = new CanvasManager(canvas_container);
 let renderer = new Renderer3D();
 
+manager.setPixelRatio(10);
 manager.setDrawMode('2d');
-
 manager.setBackgroundColor('black');
 
 renderer.setDimensions(manager.getWidth(), manager.getHeight());
+renderer.setPosAndRot(0, 0, 0, 0, 0);
 
 let y = 0;
 
