@@ -64,19 +64,48 @@ struct ObjectColor {
 
 struct CollisionResult {
   bool collision;
+  vec3 normal;
   ObjectColor color;
 };
 
 CollisionResult checkCollideCuboid(vec3 posStart, vec3 posEnd, ObjectColor color, vec3 pos) {
   CollisionResult collide;
   
+  vec3 posCenter = (posStart + posEnd) / 2.0;
+  vec3 dimensions = posEnd - posStart;
+  vec3 halfDimensions = dimensions / 2.0;
+  
+  vec3 vecFromCuboid = -(pos - posCenter);
+  
   if (
-    pos.x >= posStart.x && pos.x <= posEnd.x &&
-    pos.y >= posStart.y && pos.y <= posEnd.y &&
-    pos.z >= posStart.z && pos.z <= posEnd.z
+    vecFromCuboid.x >= -halfDimensions.x && vecFromCuboid.x <= halfDimensions.x &&
+    vecFromCuboid.y >= -halfDimensions.y && vecFromCuboid.y <= halfDimensions.y &&
+    vecFromCuboid.z >= -halfDimensions.z && vecFromCuboid.z <= halfDimensions.z
   ) {
     collide.collision = true;
     collide.color = color;
+    
+    vec3 normalizedVecFromCuboid = vecFromCuboid / halfDimensions;
+    
+    if (abs(normalizedVecFromCuboid.x) > abs(normalizedVecFromCuboid.y) && abs(normalizedVecFromCuboid.x) > abs(normalizedVecFromCuboid.z)) {
+      if (normalizedVecFromCuboid.x > 0.0) {
+        collide.normal = vec3(1.0, 0.0, 0.0);
+      } else {
+        collide.normal = vec3(-1.0, 0.0, 0.0);
+      }
+    } else if (abs(normalizedVecFromCuboid.y) > abs(normalizedVecFromCuboid.z) && abs(normalizedVecFromCuboid.y) > abs(normalizedVecFromCuboid.z)) {
+      if (normalizedVecFromCuboid.y > 0.0) {
+        collide.normal = vec3(0.0, 1.0, 0.0);
+      } else {
+        collide.normal = vec3(0.0, -1.0, 0.0);
+      }
+    } else if (abs(normalizedVecFromCuboid.z) > abs(normalizedVecFromCuboid.x) && abs(normalizedVecFromCuboid.z) > abs(normalizedVecFromCuboid.y)) {
+      if (normalizedVecFromCuboid.z > 0.0) {
+        collide.normal = vec3(0.0, 0.0, 1.0);
+      } else {
+        collide.normal = vec3(0.0, 0.0, -1.0);
+      }
+    }
   } else {
     collide.collision = false;
   }
@@ -87,8 +116,11 @@ CollisionResult checkCollideCuboid(vec3 posStart, vec3 posEnd, ObjectColor color
 CollisionResult checkCollideSphere(vec3 posSphere, float radius, ObjectColor color, vec3 pos) {
   CollisionResult collide;
   
-  if (length(pos - posSphere) <= radius) {
+  vec3 vecFromSphere = -(pos - posSphere);
+  
+  if (length(vecFromSphere) <= radius) {
     collide.collision = true;
+    collide.normal = normalize(vecFromSphere);
     collide.color = color;
   } else {
     collide.collision = false;
@@ -113,16 +145,12 @@ CollisionResult checkCollision(vec3 pos) {
   return collide;
 }
 
-struct LightColor {
+struct LightResult {
+  bool reached;
   vec3 color;
 };
 
-struct LightResult {
-  bool reached;
-  LightColor color;
-};
-
-LightResult checkLightEverPresent(LightColor color, vec3 pos) {
+LightResult checkLightEverPresent(vec3 color, vec3 pos) {
   LightResult lightResult;
   
   lightResult.reached = true;
@@ -131,12 +159,14 @@ LightResult checkLightEverPresent(LightColor color, vec3 pos) {
   return lightResult;
 }
 
-LightResult checkLightPointSource(vec3 posLight, LightColor color, vec3 pos) {
+LightResult checkLightPointSource(vec3 posLight, vec3 color, vec3 pos, vec3 normal) {
   LightResult lightResult;
   
   vec3 vecToLight = -(pos - posLight);
   
-  if (length(vecToLight) > MAX_RAYTRACE_DIST) {
+  float distToLight = length(vecToLight);
+  
+  if (distToLight > MAX_RAYTRACE_DIST) {
     lightResult.reached = false;
   } else {
     vec3 currentPos = pos;
@@ -158,28 +188,33 @@ LightResult checkLightPointSource(vec3 posLight, LightColor color, vec3 pos) {
       lightResult.reached = false;
     } else {
       lightResult.reached = true;
-      lightResult.color = color;
+      
+      float normalAlignment = -dot(normal, normalize(vecToLight));
+      if (normalAlignment > 0.0) {
+        lightResult.color = color * normalAlignment * (1.0 / distToLight / distToLight);
+      } else {
+        lightResult.color = ZERO_COLOR;
+      }
     }
   }
-  
   
   return lightResult;
 }
 
-vec3 raytraceStepToLights(vec3 pos) {
+vec3 raytraceStepToLights(vec3 pos, vec3 normal) {
   vec3 cumulativeLightColor = ZERO_COLOR;
   
   LightResult lightResult;
   
-  LightColor color;
+  vec3 color;
   
-  color.color = vec3(0.1, 0.1, 0.1);
+  color = vec3(0.1, 0.1, 0.1);
   lightResult = checkLightEverPresent(color, pos);
-  if (lightResult.reached) cumulativeLightColor += lightResult.color.color;
+  if (lightResult.reached) cumulativeLightColor += lightResult.color;
   
-  color.color = vec3(1.0, 1.0, 1.0);
-  lightResult = checkLightPointSource(vec3(0.0, 2.0, 0.0), color, pos);
-  if (lightResult.reached) cumulativeLightColor += lightResult.color.color;
+  color = vec3(15.0, 15.0, 15.0);
+  lightResult = checkLightPointSource(vec3(0.0, 4.0, 0.0), color, pos, normal);
+  if (lightResult.reached) cumulativeLightColor += lightResult.color;
   
   return cumulativeLightColor;
 }
@@ -190,7 +225,7 @@ vec3 getRaytraceColor(vec3 currentPos, vec3 stepDir) {
   CollisionResult collisionResult = checkCollision(currentPos);
   
   if (collisionResult.collision) {
-    return collisionResult.color.diffuseColor * raytraceStepToLights(currentPos);
+    return collisionResult.color.diffuseColor * raytraceStepToLights(currentPos, collisionResult.normal);
   }
   
   vec3 pastPos;
@@ -202,7 +237,7 @@ vec3 getRaytraceColor(vec3 currentPos, vec3 stepDir) {
     CollisionResult collisionResult = checkCollision(currentPos);
     
     if (collisionResult.collision) {
-      return collisionResult.color.diffuseColor * raytraceStepToLights(pastPos);
+      return collisionResult.color.diffuseColor * raytraceStepToLights(pastPos, collisionResult.normal);
     }
   }
   
