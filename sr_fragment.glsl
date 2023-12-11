@@ -3,7 +3,7 @@
 precision highp float;
 
 const float STEP_SIZE = 0.05;
-const int MAX_STEPS = 30;
+const int MAX_STEPS = 300;
 const vec3 BACKGROUND_COLOR = vec3(0.0, 0.0, 0.0);
 
 uniform vec2 iResolution;
@@ -107,7 +107,13 @@ vec3 getColorAtScreenPos(vec2 screenCoord) {
     stepDirParams.rightDir * (screenCoord.x * fovScale) +
     stepDirParams.upDir * (screenCoord.y * fovScale);
   
-  stepDir = normalize(stepDir);
+  stepDir = normalize(stepDir) * STEP_SIZE;
+  
+  CollisionResult collisionResult = checkCollision(currentPos);
+  
+  if (collisionResult.collision) {
+    return collisionResult.color;
+  }
   
   for (int i = 0; i < MAX_STEPS; i++) {
     currentPos += stepDir;

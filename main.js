@@ -65,17 +65,68 @@
       
       let FOV = pi * 0.5;
       let MOUSE_SENSITIVITY = 1.5;
+      let MOVEMENT_SPEED = 1.0;
       
-      let x = 0, y = 1, z = 0, elev = 0, azim = 0;
+      let pos = new Vec3D(0, 1, 0);
+      let elev = 0, azim = 0;
       let pointerLocked = false;
+      let currentKeys = new Set();
+      let lastFrameTime = Date.now();
+      let lastFrameDuration = 0;
       
       drawer.setFov(FOV);
       
+      let updateMovementVars = () => {
+        let facingAngle = Renderer3D.convertAngleToStepDirection2D(elev, azim);
+        
+        if (currentKeys.has('w')) {
+          pos = pos.add(
+            facingAngle.forwardDirection.scalarMult(MOVEMENT_SPEED * lastFrameDuration)
+          );
+        }
+        
+        if (currentKeys.has('s')) {
+          pos = pos.add(
+            facingAngle.forwardDirection.scalarMult(-MOVEMENT_SPEED * lastFrameDuration)
+          );
+        }
+        
+        if (currentKeys.has('d')) {
+          pos = pos.add(
+            facingAngle.rightDirection.scalarMult(MOVEMENT_SPEED * lastFrameDuration)
+          );
+        }
+        
+        if (currentKeys.has('a')) {
+          pos = pos.add(
+            facingAngle.rightDirection.scalarMult(-MOVEMENT_SPEED * lastFrameDuration)
+          );
+        }
+        
+        if (currentKeys.has(' ')) {
+          pos = pos.add(
+            facingAngle.upDirection.scalarMult(MOVEMENT_SPEED * lastFrameDuration)
+          );
+        }
+        
+        if (currentKeys.has('Shift')) {
+          pos = pos.add(
+            facingAngle.upDirection.scalarMult(-MOVEMENT_SPEED * lastFrameDuration)
+          );
+        }
+      }
+      
       let draw = async () => {
         while (true) {
-          drawer.setPosAndRot(x, y, z, elev, azim);
+          updateMovementVars();
+          
+          drawer.setPosAndRot(pos.getX(), pos.getY(), pos.getZ(), elev, azim);
           
           manager.draw();
+          
+          let now = Date.now();
+          lastFrameDuration = (now - lastFrameTime) / 1000;
+          lastFrameTime = now;
           
           await new Promise(r => requestAnimationFrame(r));
         }
@@ -84,11 +135,13 @@
       let canvas = drawer.getCanvas();
       
       canvas.addEventListener('click', async () => {
-        if (pointerLocked) return;
-        
-        await canvas.requestPointerLock({
-          unadjustedMovement: true,
-        });
+        if (pointerLocked) {
+          document.exitPointerLock();
+        } else {
+          await canvas.requestPointerLock({
+            unadjustedMovement: true,
+          });
+        }
       });
       
       document.addEventListener('pointerlockchange', () => {
@@ -101,12 +154,20 @@
       
       document.addEventListener('mousemove', evt => {
         if (pointerLocked) {
-          let x = -evt.movementX * MOUSE_SENSITIVITY,
-            y = evt.movementY * MOUSE_SENSITIVITY;
+          let x = evt.movementX * MOUSE_SENSITIVITY,
+            y = -evt.movementY * MOUSE_SENSITIVITY;
           
           elev = Math.min(Math.max(elev + y / drawer.getHeight(), -pi / 2), pi / 2);
           azim = (azim + x / drawer.getHeight()) % (pi * 2);
         }
+      });
+      
+      document.addEventListener('keydown', evt => {
+        currentKeys.add(evt.key);
+      });
+      
+      document.addEventListener('keyup', evt => {
+        currentKeys.delete(evt.key);
       });
       
       await draw();
