@@ -5,6 +5,8 @@ precision highp float;
 const float STEP_SIZE = 0.05;
 const int MAX_STEPS = 1000;
 const vec3 BACKGROUND_COLOR = vec3(0.0, 0.0, 0.0);
+const vec3 INSIDE_COLOR = vec3(0.0, 0.0, 0.0);
+const vec3 LIGHT_COLOR = vec3(1.0, 1.0, 1.0);
 
 uniform vec2 iResolution;
 
@@ -54,12 +56,16 @@ StepDirParams convertRotToStepDir(vec2 rotVec) {
   return result;
 }
 
-struct CollisionResult {
-  bool collision;
-  vec3 color;
+struct ObjectColor {
+  vec3 diffuseColor;
 };
 
-CollisionResult checkCollideCuboid(vec3 posStart, vec3 posEnd, vec3 color, vec3 pos) {
+struct CollisionResult {
+  bool collision;
+  ObjectColor color;
+};
+
+CollisionResult checkCollideCuboid(vec3 posStart, vec3 posEnd, ObjectColor color, vec3 pos) {
   CollisionResult collide;
   
   if (
@@ -76,7 +82,7 @@ CollisionResult checkCollideCuboid(vec3 posStart, vec3 posEnd, vec3 color, vec3 
   return collide;
 }
 
-CollisionResult checkCollideSphere(vec3 posSphere, float radius, vec3 color, vec3 pos) {
+CollisionResult checkCollideSphere(vec3 posSphere, float radius, ObjectColor color, vec3 pos) {
   CollisionResult collide;
   
   if (length(pos - posSphere) <= radius) {
@@ -92,10 +98,83 @@ CollisionResult checkCollideSphere(vec3 posSphere, float radius, vec3 color, vec
 CollisionResult checkCollision(vec3 pos) {
   CollisionResult collide;
   
-  collide = checkCollideCuboid(vec3(-10.0, -1.0, -10.0), vec3(10.0, 0.0, 10.0), vec3(1.0, 0.0, 0.0), pos); if (collide.collision) return collide;
-  collide = checkCollideSphere(vec3(1.0, 1.0, 1.0), 0.5, vec3(0.0, 1.0, 0.0), pos); if (collide.collision) return collide;
+  ObjectColor color;
+  
+  color.diffuseColor = vec3(1.0, 0.0, 0.0);
+  collide = checkCollideCuboid(vec3(-10.0, -1.0, -10.0), vec3(10.0, 0.0, 10.0), color, pos);
+  if (collide.collision) return collide;
+  
+  color.diffuseColor = vec3(0.0, 1.0, 0.0);
+  collide = checkCollideSphere(vec3(1.0, 1.0, 1.0), 0.5, color, pos);
+  if (collide.collision) return collide;
   
   return collide;
+}
+
+struct LightColor {
+  vec3 color;
+};
+
+struct LightResult {
+  bool reached;
+  LightColor color;
+};
+
+LightResult checkLightEverPresent(LightColor color, vec3 pos) {
+  LightResult lightResult;
+  
+  lightResult.reached = true;
+  lightResult.color = color;
+  
+  return lightResult;
+}
+
+LightResult checkLightPointSource(vec3 posLight, LightColor color, vec3 pos) {
+  LightResult lightResult;
+  
+  lightResult.reached = false;
+  
+  return lightResult;
+}
+
+vec3 raytraceStepToLights(vec3 pos) {
+  vec3 cumulativeLightColor = vec3(0.0, 0.0, 0.0);
+  
+  LightResult lightResult;
+  
+  LightColor color;
+  
+  color.color = vec3(0.1, 0.1, 0.1);
+  lightResult = checkLightEverPresent(color, pos);
+  if (lightResult.reached) cumulativeLightColor += lightResult.color.color;
+  
+  color.color = vec3(1.0, 1.0, 1.0);
+  lightResult = checkLightPointSource(vec3(0.0, 10.0, 0.0), color, pos);
+  if (lightResult.reached) cumulativeLightColor += lightResult.color.color;
+  
+  return cumulativeLightColor;
+}
+
+vec3 getRaytraceColor(vec3 currentPos, vec3 stepDir) {
+  stepDir *= STEP_SIZE;
+  
+  CollisionResult collisionResult = checkCollision(currentPos);
+  
+  if (collisionResult.collision) {
+    return INSIDE_COLOR;
+  }
+  
+  for (int i = 0; i < MAX_STEPS; i++) {
+    currentPos += stepDir;
+    
+    CollisionResult collisionResult = checkCollision(currentPos);
+    
+    if (collisionResult.collision) {
+      return collisionResult.color.diffuseColor * raytraceStepToLights(currentPos);
+    }
+  }
+  
+  return BACKGROUND_COLOR;
 }
 
 vec3 getColorAtScreenPos(vec2 screenCoord) {
@@ -107,25 +186,9 @@ vec3 getColorAtScreenPos(vec2 screenCoord) {
     stepDirParams.rightDir * (screenCoord.x * fovScale) +
     stepDirParams.upDir * (screenCoord.y * fovScale);
   
-  stepDir = normalize(stepDir) * STEP_SIZE;
+  stepDir = normalize(stepDir);
   
-  CollisionResult collisionResult = checkCollision(currentPos);
-  
-  if (collisionResult.collision) {
-    return collisionResult.color;
-  }
-  
-  for (int i = 0; i < MAX_STEPS; i++) {
-    currentPos += stepDir;
-    
-    CollisionResult collisionResult = checkCollision(currentPos);
-    
-    if (collisionResult.collision) {
-      return collisionResult.color;
-    }
-  }
-  
-  return BACKGROUND_COLOR;
+  return getRaytraceColor(currentPos, stepDir);
 }
 
 void main() {
