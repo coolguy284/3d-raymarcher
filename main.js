@@ -63,10 +63,53 @@
       
       let drawer = manager.getDrawer();
       
-      drawer.setPosAndRot(0, 1, 0, 0, 0);
-      drawer.setFov(pi * 0.5);
+      let FOV = pi * 0.5;
+      let MOUSE_SENSITIVITY = 1.5;
       
-      manager.draw();
+      let x = 0, y = 1, z = 0, elev = 0, azim = 0;
+      let pointerLocked = false;
+      
+      drawer.setFov(FOV);
+      
+      let draw = async () => {
+        while (true) {
+          drawer.setPosAndRot(x, y, z, elev, azim);
+          
+          manager.draw();
+          
+          await new Promise(r => requestAnimationFrame(r));
+        }
+      };
+      
+      let canvas = drawer.getCanvas();
+      
+      canvas.addEventListener('click', async () => {
+        if (pointerLocked) return;
+        
+        await canvas.requestPointerLock({
+          unadjustedMovement: true,
+        });
+      });
+      
+      document.addEventListener('pointerlockchange', () => {
+        pointerLocked = document.pointerLockElement != null;
+      });
+      
+      document.addEventListener('pointerlockerror', () => {
+        pointerLocked = document.pointerLockElement != null;
+      });
+      
+      document.addEventListener('mousemove', evt => {
+        if (pointerLocked) {
+          let x = -evt.movementX * MOUSE_SENSITIVITY,
+            y = evt.movementY * MOUSE_SENSITIVITY;
+          
+          elev = Math.min(Math.max(elev + y / drawer.getHeight(), -pi / 2), pi / 2);
+          azim = (azim + x / drawer.getHeight()) % (pi * 2);
+        }
+      });
+      
+      await draw();
       break;
   }
 })();
