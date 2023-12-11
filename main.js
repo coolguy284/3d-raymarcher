@@ -61,6 +61,11 @@
       await manager.setDrawMode('shader');
       manager.setBackgroundColor('black');
       
+      let drawer = manager.getDrawer();
+      
+      drawer.setPosAndRot(0, 1, 0, 0, 0);
+      drawer.setFov(pi * 0.5);
+      
       manager.draw();
       break;
   }
