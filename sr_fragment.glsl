@@ -10,7 +10,7 @@ const vec3 BACKGROUND_COLOR = vec3(0.0, 0.0, 0.0);
 const vec3 INSIDE_COLOR = vec3(0.0, 0.0, 0.0);
 const vec3 LIGHT_COLOR = vec3(1.0, 1.0, 1.0);
 const vec3 ZERO_COLOR = vec3(0.0, 0.0, 0.0);
-const float BACKGROUND_LIGHT_INTENSITY = 0.01;
+const float BACKGROUND_LIGHT_INTENSITY = 0.003;
 
 const float INF = 1.0 / 0.0;
 
@@ -151,6 +151,19 @@ CollisionResult checkCollideSphere(vec3 posSphere, float radius, ObjectColor col
   return collide;
 }
 
+CollisionResult checkCollidePoint(vec3 posPoint, vec3 pos) {
+  CollisionResult collide;
+  
+  vec3 vecFromPoint = -(pos - posPoint);
+  
+  float distToPoint = length(vecFromPoint);
+  
+  collide.collision = false;
+  collide.dist = distToPoint;
+  
+  return collide;
+}
+
 CollisionResult checkCollision(vec3 pos) {
   CollisionResult collide;
   float minDist = INF;
@@ -164,6 +177,10 @@ CollisionResult checkCollision(vec3 pos) {
   
   color.diffuseColor = vec3(0.0, 1.0, 0.0);
   collide = checkCollideSphere(vec3(1.0, 1.0, 1.0), 0.5, color, pos);
+  if (collide.collision) return collide;
+  else minDist = min(minDist, collide.dist);
+  
+  collide = checkCollidePoint(vec3(0.0, 4.0, 0.0), pos);
   if (collide.collision) return collide;
   else minDist = min(minDist, collide.dist);
   
