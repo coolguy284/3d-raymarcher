@@ -19,6 +19,10 @@ const float BACKGROUND_LIGHT_INTENSITY = 0.003;
     cuboid: collider
     sphere: collider
     point source: collider, light, bglight
+    black hole: collider, bend
+    
+    everpresent light: light
+    global gravity: bend
 */
 
 /* Programmatic constants */
@@ -67,6 +71,7 @@ struct BackstepResults {
 /* Required forward declares */
 
 CollisionResult checkCollision(vec3 pos);
+vec3 getLightBendDir(vec3 pos);
 
 /* Prelim funcs */
 
@@ -207,15 +212,15 @@ LightResult checkLightEverPresent(vec3 color) {
 LightResult checkLightPointSource(vec3 posLight, vec3 color, vec3 pos, vec3 normal, float totalDist) {
   LightResult lightResult;
   
-  vec3 vecToLight = -(pos - posLight);
+  vec3 vecFromLight = -(pos - posLight);
   
-  float distToLight = length(vecToLight);
+  float distToLight = length(vecFromLight);
   
   if (totalDist + distToLight > MAX_RAYTRACE_DIST) {
     lightResult.reached = false;
   } else {
     vec3 currentPos = pos;
-    vec3 lightStepDir = normalize(vecToLight);
+    vec3 lightStepDir = normalize(vecFromLight);
     bool blocked = false;
     
     for (int i = 0; i < MAX_STEPS; i++) {
@@ -233,6 +238,8 @@ LightResult checkLightPointSource(vec3 posLight, vec3 color, vec3 pos, vec3 norm
         break;
       }
       
+      //lightStepDir = normalize(lightStepDir + getLightBendDir(currentPos) * currentStepSize);
+      
       currentPos += lightStepDir * currentStepSize;
     }
     
@@ -241,7 +248,7 @@ LightResult checkLightPointSource(vec3 posLight, vec3 color, vec3 pos, vec3 norm
     } else {
       lightResult.reached = true;
       
-      float normalAlignment = -dot(normal, normalize(vecToLight));
+      float normalAlignment = -dot(normal, normalize(vecFromLight));
       if (normalAlignment > 0.0) {
         lightResult.color = color * normalAlignment * (1.0 / distToLight / distToLight);
       } else {
@@ -256,13 +263,25 @@ LightResult checkLightPointSource(vec3 posLight, vec3 color, vec3 pos, vec3 norm
 /* Raymarching background light funcs */
 
 vec3 getBGLightPointSource(vec3 posLight, vec3 color, vec3 pos) {
-  vec3 vecToLight = -(pos - posLight);
+  vec3 vecFromLight = -(pos - posLight);
   
-  float distToLight = length(vecToLight);
+  float distToLight = length(vecFromLight);
   
   float lightIntensity = 1.0 / distToLight / distToLight;
   
   return color * lightIntensity;
+}
+
+/* Raymarching light bend calculation funcs */
+
+vec3 getBendDirBlackHole(vec3 posBlackHole, float strength, vec3 pos) {
+  vec3 vecFromBlackHole = -(pos - posBlackHole);
+  
+  float distToBlackHole = length(vecFromBlackHole);
+  
+  float bendIntensity = 1.0 / distToBlackHole / distToBlackHole;
+  
+  return -normalize(vecFromBlackHole) * bendIntensity * strength;
 }
 
 /* Collision related funcs */
@@ -284,7 +303,7 @@ CollisionResult checkCollision(vec3 pos) {
   else minDist = min(minDist, collide.dist);
   
   color.diffuseColor = vec3(0.0, 0.0, 0.0);
-  collide = checkCollideSphere(vec3(1.0, 1.0, -2.0), 0.25, color, pos);
+  collide = checkCollideSphere(vec3(1.0, 1.0, -2.0), 0.01, color, pos);
   if (collide.collision) return collide;
   else minDist = min(minDist, collide.dist);
   
@@ -326,6 +345,14 @@ vec3 getBackgroundLightColor(vec3 pos) {
   return backgroundColor * BACKGROUND_LIGHT_INTENSITY;
 }
 
+vec3 getLightBendDir(vec3 pos) {
+  vec3 cumulativeBendDir = vec3(0.0, 0.0, 0.0);
+  
+  cumulativeBendDir += getBendDirBlackHole(vec3(1.0, 1.0, -2.0), -0.07, pos);
+  
+  return cumulativeBendDir;
+}
+
 /* Main raymarching funcs */
 
 BackstepResults backstepByNormal(vec3 currentPos, float totalDist, vec3 normal) {
@@ -361,6 +388,8 @@ vec3 getRaytraceColor(vec3 currentPos, vec3 stepDir, float totalDist) {
     }
     
     accumulatedBackgroundLight += getBackgroundLightColor(currentPos) * currentStepSize;
+    
+    stepDir = normalize(stepDir + getLightBendDir(currentPos) * currentStepSize);
     
     currentPos += currentStepSize * stepDir;
     totalDist += currentStepSize;
