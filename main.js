@@ -69,7 +69,7 @@
       let MOVEMENT_SPEED = 1.0;
       let SPEED_BOOST = 10;
       let MAX_FOV_EXPONENT = 0;
-      let MIN_FOV_EXPONENT = -2;
+      let MIN_FOV_EXPONENT = -10;
       
       let pos = new Vec3D(0, 1, 0);
       let elev = 0, azim = 0;
@@ -167,7 +167,7 @@
       
       document.addEventListener('mousemove', evt => {
         if (pointerLocked) {
-          let x = evt.movementX * 10 ** fovExponent * MOUSE_SENSITIVITY,
+          let x = (evt.movementX * 10 ** fovExponent * MOUSE_SENSITIVITY) / (cos(elev) + 10 ** fovExponent),
             y = -evt.movementY * 10 ** fovExponent * MOUSE_SENSITIVITY;
           
           elev = Math.min(Math.max(elev + y / drawer.getHeight(), -pi / 2), pi / 2);

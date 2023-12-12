@@ -274,6 +274,10 @@ vec3 getBGLightPointSource(vec3 posLight, vec3 color, vec3 pos) {
 
 /* Raymarching light bend calculation funcs */
 
+vec3 getBendDirGlobalGravity(vec3 gravityDir) {
+  return gravityDir;
+}
+
 vec3 getBendDirBlackHole(vec3 posBlackHole, float strength, vec3 pos) {
   vec3 vecFromBlackHole = -(pos - posBlackHole);
   
@@ -348,6 +352,7 @@ vec3 getBackgroundLightColor(vec3 pos) {
 vec3 getLightBendDir(vec3 pos) {
   vec3 cumulativeBendDir = vec3(0.0, 0.0, 0.0);
   
+  cumulativeBendDir += getBendDirGlobalGravity(vec3(0.0, -1.0, 0.0) * 0.01);
   cumulativeBendDir += getBendDirBlackHole(vec3(1.0, 1.0, -2.0), -0.07, pos);
   
   return cumulativeBendDir;
