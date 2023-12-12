@@ -2,7 +2,7 @@
 let drawer;
 
 let BASE_FOV = pi * 0.5;
-let MOUSE_SENSITIVITY = 1.8;
+let MOUSE_SENSITIVITY = 0.007;
 let WHEEL_FOV_SENSITIVITY = 0.0004;
 let MOVEMENT_SPEED = 1.0;
 let SPEED_BOOST = 10;
@@ -222,8 +222,8 @@ async function mainShader() {
       let x = (evt.movementX * 10 ** fovExponent * MOUSE_SENSITIVITY) / (cos(elev) + 10 ** fovExponent),
         y = -evt.movementY * 10 ** fovExponent * MOUSE_SENSITIVITY;
       
-      elev = Math.min(Math.max(elev + y / drawer.getHeight(), -pi / 2), pi / 2);
-      azim = (azim + x / drawer.getHeight() + pi * 2) % (pi * 2);
+      elev = Math.min(Math.max(elev + y, -pi / 2), pi / 2);
+      azim = (azim + x + pi * 2) % (pi * 2);
       
       updateSettingsFromVars();
     }

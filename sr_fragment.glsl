@@ -4,8 +4,8 @@ precision highp float;
 
 /* Tweakable constants */
 
-const float BACKSTEP_DIST = 0.02;
-const float MIN_STEP_SIZE = 0.01;
+const float BACKSTEP_DIST = 0.002;
+const float MIN_STEP_SIZE = 0.001;
 const int MAX_STEPS = 200;
 const float MAX_RAYTRACE_DIST = 50.0;
 const vec3 BACKGROUND_COLOR = vec3(0.0, 0.0, 0.0);
@@ -310,6 +310,10 @@ CollisionResult checkCollision(vec3 pos) {
   collide = checkCollideSphere(vec3(1.0, 1.0, -2.0), 0.01, color, pos);
   if (collide.collision) return collide;
   else minDist = min(minDist, collide.dist);
+  
+  /*collide = checkCollidePoint(vec3(1.0, 1.0, -2.0), pos);
+  if (collide.collision) return collide;
+  else minDist = min(minDist, collide.dist);*/
   
   collide = checkCollidePoint(vec3(0.0, 4.0, 0.0), pos);
   if (collide.collision) return collide;
