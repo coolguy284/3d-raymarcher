@@ -10,7 +10,7 @@
       
       manager.setPixelRatio(10);
       await manager.setDrawMode('2d');
-      manager.setBackgroundColor('black');
+      //manager.setBackgroundColor('black');
       
       let renderer = new Renderer3D();
       
@@ -59,7 +59,7 @@
       
       manager.setPixelRatio(2);
       await manager.setDrawMode('shader');
-      manager.setBackgroundColor('black');
+      //manager.setBackgroundColor('black');
       
       let drawer = manager.getDrawer();
       

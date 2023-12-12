@@ -18,6 +18,7 @@ body {
 
 #canvas_container {
   overflow: hidden;
+  background-color: black;
 }
 
 canvas {
