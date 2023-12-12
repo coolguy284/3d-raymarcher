@@ -1,5 +1,5 @@
 // js vars
-let MAX_FRAME_TIME, renderer, y, init, draw;
+let MAX_FRAME_TIME, renderer, screenY, init, draw;
 
 function mainJS() {
   MAX_FRAME_TIME = 1 / 20;
@@ -8,7 +8,7 @@ function mainJS() {
   
   renderer = new Renderer3D();
   
-  y = 0;
+  screenY = 0;
   
   init = async () => {
     manager.setPixelRatio(10);
@@ -21,12 +21,12 @@ function mainJS() {
   };
   
   draw = async () => {
-    while (y < manager.getHeight()) {
+    while (screenY < manager.getHeight()) {
       let drawStartTime = Date.now();
       
-      for (; y < manager.getHeight(); y++) {
+      for (; screenY < manager.getHeight(); screenY++) {
         for (let x = 0; x < manager.getWidth(); x++) {
-          manager.setPixel(x, y, renderer.calculatePixelColor(x, y));
+          manager.setPixel(x, screenY, renderer.calculatePixelColor(x, screenY));
         }
         
         if ((Date.now() - drawStartTime) > MAX_FRAME_TIME) {
@@ -34,7 +34,7 @@ function mainJS() {
         }
       }
       
-      setRenderProgress(y);
+      setRenderProgress(screenY);
       
       await new Promise(r => requestAnimationFrame(r));
     }

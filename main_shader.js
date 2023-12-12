@@ -9,8 +9,13 @@ let SPEED_BOOST = 10;
 let MAX_FOV_EXPONENT = 1;
 let MIN_FOV_EXPONENT = -10;
 let MOVING_AVG_FRAME_COUNT = 100;
-let DRAW_ONCE = true;
+let DRAW_ONCE = false;
+let DRAW_NONE = false;
 
+let monitorFrameRate;
+let vsync;
+let targetFrameRate;
+let pixelRatio;
 let pos, elev, azim;
 let fovExponent, fov;
 let pointerLocked;
@@ -21,16 +26,40 @@ let lastFrameDuration;
 let lastFrameDurations;
 let canvas;
 
+let updatePixelRatio;
 let updateMovementVars;
 let updateFOV;
+let updateFOVExponent;
 let drawFrame;
 let drawLoop;
 
 async function mainShader() {
   manager = new CanvasManager(canvas_container);
   
-  manager.setPixelRatio(2);
-  await manager.setDrawMode('shader');
+  pixelRatio = 2;
+  
+  updatePixelRatio = () => {
+    manager.setPixelRatio(pixelRatio);
+  };
+  
+  updatePixelRatio();
+  
+  monitorFrameRate = await (async () => {
+    let now = Date.now();
+    await new Promise(r => requestAnimationFrame(r));
+    await new Promise(r => requestAnimationFrame(r));
+    let approxFPS = 1 / ((Date.now() - now) / 1000 / 2);
+    return approxFPS > 90 ? 120 : 60;
+  })();
+  vsync = true;
+  targetFrameRate = monitorFrameRate;
+  
+  if (DRAW_NONE) {
+    await manager.setDrawMode('2d');
+  } else {
+    await manager.setDrawMode('shader');
+  }
+  
   //manager.setBackgroundColor('black');
   
   drawer = manager.getDrawer();
@@ -55,45 +84,61 @@ async function mainShader() {
       posDelta *= SPEED_BOOST;
     }
     
+    let posChanged = false;
+    
     if (currentKeys.has('KeyW')) {
       pos = pos.add(
         facingAngle.forwardDirection.scalarMult(posDelta)
       );
+      posChanged = true;
     }
     
     if (currentKeys.has('KeyS')) {
       pos = pos.add(
         facingAngle.forwardDirection.scalarMult(-posDelta)
       );
+      posChanged = true;
     }
     
     if (currentKeys.has('KeyD')) {
       pos = pos.add(
         facingAngle.rightDirection.scalarMult(posDelta)
       );
+      posChanged = true;
     }
     
     if (currentKeys.has('KeyA')) {
       pos = pos.add(
         facingAngle.rightDirection.scalarMult(-posDelta)
       );
+      posChanged = true;
     }
     
     if (currentKeys.has('Space')) {
       pos = pos.add(
         facingAngle.upDirection.scalarMult(posDelta)
       );
+      posChanged = true;
     }
     
     if (currentKeys.has('ShiftLeft')) {
       pos = pos.add(
         facingAngle.upDirection.scalarMult(-posDelta)
       );
+      posChanged = true;
+    }
+    
+    if (posChanged) {
+      updateSettingsFromVars();
     }
   };
   
   updateFOV = () => {
     fov = BASE_FOV * 10 ** fovExponent;
+  };
+  
+  updateFOVExponent = () => {
+    fovExponent = Math.log10(fov / BASE_FOV);
   };
   
   drawFrame = () => {
@@ -109,13 +154,15 @@ async function mainShader() {
       
       updateFOV();
       
-      if (DRAW_ONCE) {
-        if (drawFrame != null) {
+      if (!DRAW_NONE) {
+        if (DRAW_ONCE) {
+          if (drawFrame != null) {
+            drawFrame();
+            drawFrame = null;
+          }
+        } else {
           drawFrame();
-          drawFrame = null;
         }
-      } else {
-        drawFrame();
       }
       
       let currentFPS = 1 / (lastFrameDurations.reduce((a, c) => a + c, 0) / lastFrameDurations.length);
@@ -137,10 +184,15 @@ async function mainShader() {
         lastFrameDurations.splice(0, lastFrameDurations.length - MOVING_AVG_FRAME_COUNT);
       }
       
-      //await new Promise(r => setTimeout(r, 15));
-      
-      for (let i = 0; i < 1; i++) {
-        await new Promise(r => requestAnimationFrame(r));
+      if (vsync) {
+        let framesToWait = Math.max(Math.round(monitorFrameRate / targetFrameRate), 1);
+        
+        for (let i = 0; i < framesToWait; i++) {
+          await new Promise(r => requestAnimationFrame(r));
+        }
+      } else {
+        //await new Promise(r => setTimeout(r, 1000 / targetFrameRate - lastFrameDuration * 1000));
+        await new Promise(r => setTimeout(r, 1000 / targetFrameRate));
       }
     }
   };
@@ -172,11 +224,14 @@ async function mainShader() {
       
       elev = Math.min(Math.max(elev + y / drawer.getHeight(), -pi / 2), pi / 2);
       azim = (azim + x / drawer.getHeight() + pi * 2) % (pi * 2);
+      
+      updateSettingsFromVars();
     }
   });
   
   document.addEventListener('wheel', evt => {
     fovExponent = Math.min(Math.max(fovExponent + evt.deltaY * WHEEL_FOV_SENSITIVITY, MIN_FOV_EXPONENT), MAX_FOV_EXPONENT);
+    updateSettingsFromVars();
   });
   
   document.addEventListener('keydown', evt => {
@@ -200,6 +255,8 @@ async function mainShader() {
   document.addEventListener('mouseup', evt => {
     currentMouse.delete(evt.button);
   });
+  
+  updateSettingsFromVars();
   
   await drawLoop();
 }
