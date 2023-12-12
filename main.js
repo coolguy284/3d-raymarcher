@@ -174,7 +174,6 @@
       
       document.addEventListener('keydown', evt => {
         currentKeys.add(evt.code);
-        console.log(currentKeys);
         if (!/^F\d+$/.test(evt.code)) {
           evt.preventDefault();
         }

@@ -158,7 +158,7 @@ CollisionResult checkCollision(vec3 pos) {
   color.diffuseColor = vec3(1.0, 0.0, 0.0);
   collide = checkCollideCuboid(vec3(-10.0, -1.0, -10.0), vec3(10.0, 0.0, 10.0), color, pos);
   if (collide.collision) return collide;
-  //else minDist = min(minDist, collide.dist);
+  else minDist = min(minDist, collide.dist);
   
   color.diffuseColor = vec3(0.0, 1.0, 0.0);
   collide = checkCollideSphere(vec3(1.0, 1.0, 1.0), 0.5, color, pos);
@@ -166,7 +166,6 @@ CollisionResult checkCollision(vec3 pos) {
   else minDist = min(minDist, collide.dist);
   
   collide.dist = minDist;
-  //collide.dist = 1.0;
   
   return collide;
 }
@@ -212,7 +211,7 @@ LightResult checkLightPointSource(vec3 posLight, vec3 color, vec3 pos, vec3 norm
       float currentStepSize = collisionResult.dist;
       
       if (totalDist + currentStepSize > MAX_RAYTRACE_DIST) {
-        blocked = true;
+        blocked = false;
         break;
       }
       
@@ -263,8 +262,8 @@ vec3 getRaytraceColor(vec3 currentPos, vec3 stepDir, float totalDist) {
     return collisionResult.color.diffuseColor * raytraceStepToLights(currentPos, collisionResult.normal, totalDist);
   }
   
-  vec3 pastPos;
-  float pastTotalDist;
+  vec3 pastPos = currentPos;
+  float pastTotalDist = totalDist;
   
   for (int i = 0; i < MAX_STEPS; i++) {
     CollisionResult collisionResult = checkCollision(currentPos);
