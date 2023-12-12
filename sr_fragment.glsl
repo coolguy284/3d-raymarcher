@@ -2,8 +2,8 @@
 
 precision highp float;
 
-const float BACKSTEP_DIST = 0.001;
-const float MIN_STEP_SIZE = 0.001;
+const float BACKSTEP_DIST = 0.02;
+const float MIN_STEP_SIZE = 0.01;
 const int MAX_STEPS = 200;
 const float MAX_RAYTRACE_DIST = 50.0;
 const vec3 BACKGROUND_COLOR = vec3(0.0, 0.0, 0.0);

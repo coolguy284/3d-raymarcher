@@ -63,20 +63,22 @@
       
       let drawer = manager.getDrawer();
       
-      let FOV = pi * 0.5;
-      let MOUSE_SENSITIVITY = 1.5;
+      let BASE_FOV = pi * 0.8;
+      let MOUSE_SENSITIVITY = 1.8;
+      let WHEEL_FOV_SENSITIVITY = 0.0004;
       let MOVEMENT_SPEED = 1.0;
       let SPEED_BOOST = 10;
+      let MAX_FOV_EXPONENT = 0;
+      let MIN_FOV_EXPONENT = -2;
       
       let pos = new Vec3D(0, 1, 0);
       let elev = 0, azim = 0;
+      let fovExponent = -0.2;
       let pointerLocked = false;
       let currentKeys = new Set();
       let currentMouse = new Set();
       let lastFrameTime = Date.now();
       let lastFrameDuration = 0;
-      
-      drawer.setFov(FOV);
       
       let updateMovementVars = () => {
         let facingAngle = Renderer3D.convertAngleToStepDirection2D(elev, azim);
@@ -129,6 +131,7 @@
           updateMovementVars();
           
           drawer.setPosAndRot(pos.getX(), pos.getY(), pos.getZ(), elev, azim);
+          drawer.setFov(BASE_FOV * 10 ** fovExponent);
           
           manager.draw();
           
@@ -164,12 +167,16 @@
       
       document.addEventListener('mousemove', evt => {
         if (pointerLocked) {
-          let x = evt.movementX * MOUSE_SENSITIVITY,
-            y = -evt.movementY * MOUSE_SENSITIVITY;
+          let x = evt.movementX * 10 ** fovExponent * MOUSE_SENSITIVITY,
+            y = -evt.movementY * 10 ** fovExponent * MOUSE_SENSITIVITY;
           
           elev = Math.min(Math.max(elev + y / drawer.getHeight(), -pi / 2), pi / 2);
           azim = (azim + x / drawer.getHeight()) % (pi * 2);
         }
+      });
+      
+      document.addEventListener('wheel', evt => {
+        fovExponent = Math.min(Math.max(fovExponent + evt.deltaY * WHEEL_FOV_SENSITIVITY, MIN_FOV_EXPONENT), MAX_FOV_EXPONENT);
       });
       
       document.addEventListener('keydown', evt => {
