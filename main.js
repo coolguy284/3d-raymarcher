@@ -158,6 +158,8 @@
             lastFrameDurations.splice(0, lastFrameDurations.length - MOVING_AVG_FRAME_COUNT);
           }
           
+          //await new Promise(r => setTimeout(r, 15));
+          
           for (let i = 0; i < 1; i++) {
             await new Promise(r => requestAnimationFrame(r));
           }

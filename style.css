@@ -1,4 +1,4 @@
-html, body, #canvas_container, canvas {
+html, body, body *:not(script) {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
@@ -8,12 +8,22 @@ html, body, #canvas_container, canvas {
 html {
   height: 100%;
   overflow: hidden;
-  font-family: Arial, sans-serif;
+  font-family: Arial, sans-serif;;
+  color: white;
 }
 
 body {
   margin: 0;
   overflow: hidden;
+}
+
+button {
+  color: white;
+  background-color: black;
+  padding: 3px 5px 3px;
+  border: 1px solid white;
+  border-radius: 3px;
+  font-size: 18px;
 }
 
 #canvas_container {
@@ -30,7 +40,6 @@ canvas {
   position: fixed;
   bottom: 10px;
   left: 10px;
-  color: white;
   font-size: 40px;
 }
 
@@ -38,6 +47,28 @@ canvas {
   position: fixed;
   top: 10px;
   left: 10px;
-  color: white;
   font-size: 15px;
+}
+
+#settings_btn {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+}
+
+#settings_div {
+  position: fixed;
+  bottom: 5px;
+  left: 5px;
+  width: calc(100% - 30px);
+  background-color: black;
+  padding: 10px;
+  border: 1px solid white;
+  border-radius: 8px;
+  flex-direction: row;
+  justify-content: start;
+}
+
+#settings_div * {
+  flex-grow: 0;
 }

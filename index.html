@@ -8,8 +8,14 @@
   
   <body>
     <div id = 'canvas_container'></div>
+    
     <span id = 'render_progress'></span>
     <span id = 'info'></span>
+    <button id = 'settings_btn' onclick = 'showSettings();'>Settings</button>
+    
+    <div id = 'settings_div' style = 'display: none;'>
+      <button id = 'close_btn' onclick = 'closeSettings();'>Close</button>
+    </div>
     
     <script src = 'lib/extern/gl-matrix-min.js'></script>
     <script src = 'lib/canvas/manager.js'></script>
@@ -18,6 +24,7 @@
     <script src = 'lib/renderer/main.js'></script>
     <script src = 'lib/linear_algebra/main.js'></script>
     <script src = 'lib/math_convenience.js'></script>
+    <script src = 'ui.js'></script>
     <script src = 'main.js'></script>
   </body>
 </html>
