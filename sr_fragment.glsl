@@ -2,6 +2,8 @@
 
 precision highp float;
 
+/* Tweakable constants */
+
 const float BACKSTEP_DIST = 0.02;
 const float MIN_STEP_SIZE = 0.01;
 const int MAX_STEPS = 200;
@@ -12,7 +14,18 @@ const vec3 LIGHT_COLOR = vec3(1.0, 1.0, 1.0);
 const vec3 ZERO_COLOR = vec3(0.0, 0.0, 0.0);
 const float BACKGROUND_LIGHT_INTENSITY = 0.003;
 
+/*
+  object info, add an object of this type to these functions:
+    cuboid: collider
+    sphere: collider
+    point source: collider, light, bglight
+*/
+
+/* Programmatic constants */
+
 const float INF = 1.0 / 0.0;
+
+/* Uniforms and outs */
 
 uniform vec2 iResolution;
 
@@ -22,7 +35,40 @@ uniform float fovScale;
 
 out vec4 outColor;
 
-// prelim funcs
+/* Structs */
+
+struct StepDirParams {
+  vec3 stepDir;
+  vec3 rightDir;
+  vec3 upDir;
+};
+
+struct ObjectColor {
+  vec3 diffuseColor;
+};
+
+struct CollisionResult {
+  bool collision;
+  float dist;
+  vec3 normal;
+  ObjectColor color;
+};
+
+struct LightResult {
+  bool reached;
+  vec3 color;
+};
+
+struct BackstepResults {
+  vec3 pos;
+  float totalDist;
+};
+
+/* Required forward declares */
+
+CollisionResult checkCollision(vec3 pos);
+
+/* Prelim funcs */
 
 vec2 convertScreenCoordToNormalized(vec2 screenCoord) {
   return vec2(
@@ -30,12 +76,6 @@ vec2 convertScreenCoordToNormalized(vec2 screenCoord) {
     (screenCoord.y - iResolution.y / 2.0) / (iResolution.y / 2.0)
   );
 }
-
-struct StepDirParams {
-  vec3 stepDir;
-  vec3 rightDir;
-  vec3 upDir;
-};
 
 StepDirParams convertRotToStepDir(vec2 rotVec) {
   float elev = rotVec.x;
@@ -64,18 +104,7 @@ StepDirParams convertRotToStepDir(vec2 rotVec) {
   return result;
 }
 
-// raymarching shape collision funcs
-
-struct ObjectColor {
-  vec3 diffuseColor;
-};
-
-struct CollisionResult {
-  bool collision;
-  float dist;
-  vec3 normal;
-  ObjectColor color;
-};
+/* Raymarching shape collision funcs */
 
 CollisionResult checkCollideCuboid(vec3 posStart, vec3 posEnd, ObjectColor color, vec3 pos) {
   CollisionResult collide;
@@ -164,37 +193,7 @@ CollisionResult checkCollidePoint(vec3 posPoint, vec3 pos) {
   return collide;
 }
 
-CollisionResult checkCollision(vec3 pos) {
-  CollisionResult collide;
-  float minDist = INF;
-  
-  ObjectColor color;
-  
-  color.diffuseColor = vec3(1.0, 0.0, 0.0);
-  collide = checkCollideCuboid(vec3(-10.0, -1.0, -10.0), vec3(10.0, 0.0, 10.0), color, pos);
-  if (collide.collision) return collide;
-  else minDist = min(minDist, collide.dist);
-  
-  color.diffuseColor = vec3(0.0, 1.0, 0.0);
-  collide = checkCollideSphere(vec3(1.0, 1.0, 1.0), 0.5, color, pos);
-  if (collide.collision) return collide;
-  else minDist = min(minDist, collide.dist);
-  
-  collide = checkCollidePoint(vec3(0.0, 4.0, 0.0), pos);
-  if (collide.collision) return collide;
-  else minDist = min(minDist, collide.dist);
-  
-  collide.dist = minDist;
-  
-  return collide;
-}
-
-// raymarching light funcs
-
-struct LightResult {
-  bool reached;
-  vec3 color;
-};
+/* Raymarching light funcs */
 
 LightResult checkLightEverPresent(vec3 color) {
   LightResult lightResult;
@@ -254,6 +253,8 @@ LightResult checkLightPointSource(vec3 posLight, vec3 color, vec3 pos, vec3 norm
   return lightResult;
 }
 
+/* Raymarching background light funcs */
+
 vec3 getBGLightPointSource(vec3 posLight, vec3 color, vec3 pos) {
   vec3 vecToLight = -(pos - posLight);
   
@@ -264,7 +265,37 @@ vec3 getBGLightPointSource(vec3 posLight, vec3 color, vec3 pos) {
   return color * lightIntensity;
 }
 
-// main raymarching funcs
+/* Collision related funcs */
+
+CollisionResult checkCollision(vec3 pos) {
+  CollisionResult collide;
+  float minDist = INF;
+  
+  ObjectColor color;
+  
+  color.diffuseColor = vec3(1.0, 0.0, 0.0);
+  collide = checkCollideCuboid(vec3(-10.0, -1.0, -10.0), vec3(10.0, 0.0, 10.0), color, pos);
+  if (collide.collision) return collide;
+  else minDist = min(minDist, collide.dist);
+  
+  color.diffuseColor = vec3(0.0, 1.0, 0.0);
+  collide = checkCollideSphere(vec3(1.0, 1.0, 1.0), 0.5, color, pos);
+  if (collide.collision) return collide;
+  else minDist = min(minDist, collide.dist);
+  
+  color.diffuseColor = vec3(0.0, 0.0, 0.0);
+  collide = checkCollideSphere(vec3(1.0, 1.0, -2.0), 0.25, color, pos);
+  if (collide.collision) return collide;
+  else minDist = min(minDist, collide.dist);
+  
+  collide = checkCollidePoint(vec3(0.0, 4.0, 0.0), pos);
+  if (collide.collision) return collide;
+  else minDist = min(minDist, collide.dist);
+  
+  collide.dist = minDist;
+  
+  return collide;
+}
 
 vec3 raytraceStepToLights(vec3 pos, vec3 normal, float totalDist) {
   vec3 cumulativeLightColor = ZERO_COLOR;
@@ -295,10 +326,7 @@ vec3 getBackgroundLightColor(vec3 pos) {
   return backgroundColor * BACKGROUND_LIGHT_INTENSITY;
 }
 
-struct BackstepResults {
-  vec3 pos;
-  float totalDist;
-};
+/* Main raymarching funcs */
 
 BackstepResults backstepByNormal(vec3 currentPos, float totalDist, vec3 normal) {
   BackstepResults result;
@@ -341,7 +369,7 @@ vec3 getRaytraceColor(vec3 currentPos, vec3 stepDir, float totalDist) {
   return BACKGROUND_COLOR + accumulatedBackgroundLight;
 }
 
-// main loop funcs
+/* Main loop funcs */
 
 vec3 getColorAtScreenPos(vec2 screenCoord) {
   vec3 currentPos = pos;
