@@ -63,22 +63,24 @@
       
       let drawer = manager.getDrawer();
       
-      let BASE_FOV = pi * 0.8;
+      let BASE_FOV = pi * 0.5;
       let MOUSE_SENSITIVITY = 1.8;
       let WHEEL_FOV_SENSITIVITY = 0.0004;
       let MOVEMENT_SPEED = 1.0;
       let SPEED_BOOST = 10;
-      let MAX_FOV_EXPONENT = 0;
+      let MAX_FOV_EXPONENT = 1;
       let MIN_FOV_EXPONENT = -10;
+      let MOVING_AVG_FRAME_COUNT = 100;
       
       let pos = new Vec3D(0, 1, 0);
       let elev = 0, azim = 0;
-      let fovExponent = -0.2;
+      let fovExponent = 0;
       let pointerLocked = false;
       let currentKeys = new Set();
       let currentMouse = new Set();
       let lastFrameTime = Date.now();
       let lastFrameDuration = 0;
+      let lastFrameDurations = [];
       
       let updateMovementVars = () => {
         let facingAngle = Renderer3D.convertAngleToStepDirection2D(elev, azim);
@@ -130,14 +132,31 @@
         while (true) {
           updateMovementVars();
           
+          let fov = BASE_FOV * 10 ** fovExponent;
+          
+          let currentFPS = 1 / (lastFrameDurations.reduce((a, c) => a + c, 0) / lastFrameDurations.length);
+          let maxFPS = 1 / lastFrameDurations.reduce((a, c) => Math.min(a, c), Infinity);
+          let minFPS = 1 / lastFrameDurations.reduce((a, c) => Math.max(a, c), -Infinity);
+          
+          info.innerText = `${currentFPS.toFixed(3)} FPS (${maxFPS.toFixed(3)} max, ${minFPS.toFixed(3)} min)\n` +
+            `X/Y/Z: ${pos.getX().toFixed(3)}, ${pos.getY().toFixed(3)}, ${pos.getZ().toFixed(3)}\n` +
+            `Elev/Azim: ${deg(elev).toFixed(3)}°, ${deg(azim).toFixed(3)}°\n` +
+            `FOV: ${deg(fov).toFixed(Math.max(Math.floor(-Math.log10(fov) + 4), 0))}°`;
+          
           drawer.setPosAndRot(pos.getX(), pos.getY(), pos.getZ(), elev, azim);
-          drawer.setFov(BASE_FOV * 10 ** fovExponent);
+          drawer.setFov(fov);
           
           manager.draw();
           
           let now = Date.now();
           lastFrameDuration = (now - lastFrameTime) / 1000;
           lastFrameTime = now;
+          
+          lastFrameDurations.push(lastFrameDuration);
+          
+          if (lastFrameDurations.length > MOVING_AVG_FRAME_COUNT) {
+            lastFrameDurations.splice(0, lastFrameDurations.length - MOVING_AVG_FRAME_COUNT);
+          }
           
           for (let i = 0; i < 1; i++) {
             await new Promise(r => requestAnimationFrame(r));
@@ -171,7 +190,7 @@
             y = -evt.movementY * 10 ** fovExponent * MOUSE_SENSITIVITY;
           
           elev = Math.min(Math.max(elev + y / drawer.getHeight(), -pi / 2), pi / 2);
-          azim = (azim + x / drawer.getHeight()) % (pi * 2);
+          azim = (azim + x / drawer.getHeight() + pi * 2) % (pi * 2);
         }
       });
       

@@ -33,3 +33,11 @@ canvas {
   color: white;
   font-size: 40px;
 }
+
+#info {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  color: white;
+  font-size: 15px;
+}
