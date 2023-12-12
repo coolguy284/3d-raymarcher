@@ -2,6 +2,7 @@
 
 precision highp float;
 
+const float BACKSTEP_DIST = 0.001;
 const float MIN_STEP_SIZE = 0.001;
 const int MAX_STEPS = 200;
 const float MAX_RAYTRACE_DIST = 50.0;
@@ -255,6 +256,20 @@ vec3 raytraceStepToLights(vec3 pos, vec3 normal, float totalDist) {
   return cumulativeLightColor;
 }
 
+struct BackstepResults {
+  vec3 pos;
+  float totalDist;
+};
+
+BackstepResults backstepByNormal(vec3 currentPos, float totalDist, vec3 normal) {
+  BackstepResults result;
+  
+  result.pos = currentPos - normal * BACKSTEP_DIST;
+  result.totalDist = totalDist - BACKSTEP_DIST;
+  
+  return result;
+}
+
 vec3 getRaytraceColor(vec3 currentPos, vec3 stepDir, float totalDist) {
   CollisionResult collisionResult = checkCollision(currentPos);
   
@@ -262,14 +277,12 @@ vec3 getRaytraceColor(vec3 currentPos, vec3 stepDir, float totalDist) {
     return collisionResult.color.diffuseColor * raytraceStepToLights(currentPos, collisionResult.normal, totalDist);
   }
   
-  vec3 pastPos = currentPos;
-  float pastTotalDist = totalDist;
-  
   for (int i = 0; i < MAX_STEPS; i++) {
     CollisionResult collisionResult = checkCollision(currentPos);
     
     if (collisionResult.collision) {
-      return collisionResult.color.diffuseColor * raytraceStepToLights(pastPos, collisionResult.normal, pastTotalDist);
+      BackstepResults results = backstepByNormal(currentPos, totalDist, collisionResult.normal);
+      return collisionResult.color.diffuseColor * raytraceStepToLights(results.pos, collisionResult.normal, results.totalDist);
     }
     
     float currentStepSize = collisionResult.dist;
@@ -278,8 +291,6 @@ vec3 getRaytraceColor(vec3 currentPos, vec3 stepDir, float totalDist) {
       return BACKGROUND_COLOR;
     }
     
-    pastPos = currentPos;
-    pastTotalDist = totalDist;
     currentPos += currentStepSize * stepDir;
     totalDist += currentStepSize;
   }
