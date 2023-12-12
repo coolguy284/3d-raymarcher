@@ -86,11 +86,19 @@ CollisionResult checkCollideCuboid(vec3 posStart, vec3 posEnd, ObjectColor color
   
   vec3 normalizedVecFromCuboid = vecFromCuboid / halfDimensions;
   
-  if (
-    vecFromCuboid.x >= -halfDimensions.x && vecFromCuboid.x <= halfDimensions.x &&
+  bool trueCollision = vecFromCuboid.x >= -halfDimensions.x && vecFromCuboid.x <= halfDimensions.x &&
     vecFromCuboid.y >= -halfDimensions.y && vecFromCuboid.y <= halfDimensions.y &&
-    vecFromCuboid.z >= -halfDimensions.z && vecFromCuboid.z <= halfDimensions.z
-  ) {
+    vecFromCuboid.z >= -halfDimensions.z && vecFromCuboid.z <= halfDimensions.z;
+  
+  if (abs(normalizedVecFromCuboid.x) > abs(normalizedVecFromCuboid.y) && abs(normalizedVecFromCuboid.x) > abs(normalizedVecFromCuboid.z)) {
+    collide.dist = (abs(normalizedVecFromCuboid.x) - 1.0) * halfDimensions.x;
+  } else if (abs(normalizedVecFromCuboid.y) > abs(normalizedVecFromCuboid.z) && abs(normalizedVecFromCuboid.y) > abs(normalizedVecFromCuboid.z)) {
+    collide.dist = (abs(normalizedVecFromCuboid.y) - 1.0) * halfDimensions.y;
+  } else {
+    collide.dist = (abs(normalizedVecFromCuboid.z) - 1.0) * halfDimensions.z;
+  }
+  
+  if (trueCollision || collide.dist < MIN_STEP_SIZE) {
     collide.collision = true;
     collide.dist = 0.0;
     collide.color = color;
@@ -116,14 +124,6 @@ CollisionResult checkCollideCuboid(vec3 posStart, vec3 posEnd, ObjectColor color
     }
   } else {
     collide.collision = false;
-    
-    if (abs(normalizedVecFromCuboid.x) > abs(normalizedVecFromCuboid.y) && abs(normalizedVecFromCuboid.x) > abs(normalizedVecFromCuboid.z)) {
-      collide.dist = (abs(normalizedVecFromCuboid.x) - 1.0) * halfDimensions.x;
-    } else if (abs(normalizedVecFromCuboid.y) > abs(normalizedVecFromCuboid.z) && abs(normalizedVecFromCuboid.y) > abs(normalizedVecFromCuboid.z)) {
-      collide.dist = (abs(normalizedVecFromCuboid.y) - 1.0) * halfDimensions.y;
-    } else {
-      collide.dist = (abs(normalizedVecFromCuboid.z) - 1.0) * halfDimensions.z;
-    }
   }
   
   return collide;
@@ -136,7 +136,7 @@ CollisionResult checkCollideSphere(vec3 posSphere, float radius, ObjectColor col
   
   float distToSphere = length(vecFromSphere);
   
-  if (distToSphere <= radius) {
+  if (distToSphere <= radius + MIN_STEP_SIZE) {
     collide.collision = true;
     collide.dist = 0.0;
     collide.normal = normalize(vecFromSphere);
@@ -158,7 +158,7 @@ CollisionResult checkCollision(vec3 pos) {
   color.diffuseColor = vec3(1.0, 0.0, 0.0);
   collide = checkCollideCuboid(vec3(-10.0, -1.0, -10.0), vec3(10.0, 0.0, 10.0), color, pos);
   if (collide.collision) return collide;
-  else minDist = min(minDist, collide.dist);
+  //else minDist = min(minDist, collide.dist);
   
   color.diffuseColor = vec3(0.0, 1.0, 0.0);
   collide = checkCollideSphere(vec3(1.0, 1.0, 1.0), 0.5, color, pos);
@@ -166,6 +166,7 @@ CollisionResult checkCollision(vec3 pos) {
   else minDist = min(minDist, collide.dist);
   
   collide.dist = minDist;
+  //collide.dist = 1.0;
   
   return collide;
 }
@@ -263,12 +264,13 @@ vec3 getRaytraceColor(vec3 currentPos, vec3 stepDir, float totalDist) {
   }
   
   vec3 pastPos;
+  float pastTotalDist;
   
   for (int i = 0; i < MAX_STEPS; i++) {
     CollisionResult collisionResult = checkCollision(currentPos);
     
     if (collisionResult.collision) {
-      return collisionResult.color.diffuseColor * raytraceStepToLights(pastPos, collisionResult.normal, totalDist);
+      return collisionResult.color.diffuseColor * raytraceStepToLights(pastPos, collisionResult.normal, pastTotalDist);
     }
     
     float currentStepSize = collisionResult.dist;
@@ -278,6 +280,7 @@ vec3 getRaytraceColor(vec3 currentPos, vec3 stepDir, float totalDist) {
     }
     
     pastPos = currentPos;
+    pastTotalDist = totalDist;
     currentPos += currentStepSize * stepDir;
     totalDist += currentStepSize;
   }
