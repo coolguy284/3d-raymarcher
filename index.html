@@ -14,6 +14,58 @@
     <button id = 'settings_btn' onclick = 'showSettings();'>Settings</button>
     
     <div id = 'settings_div' style = 'display: none;'>
+      <div>
+        <label for = 'pixel_ratio_text'>Pixel Ratio:</label>
+        <input type = 'range' id = 'pixel_ratio_range' min = -0.5 max = 1.5 step = 0.001 value = 0.3>
+        <input type = 'text' id = 'pixel_ratio_text'>
+      </div>
+      <div>
+        <label for = 'fps_text'>Max FPS:</label>
+        <input type = 'range' id = 'fps_range' min = 0 max = 1 step = 0.001 value = 0>
+        <input type = 'text' id = 'fps_text'>
+        FPS
+        <label for = 'vsync'>
+          <input type = 'checkbox' id = 'vsync'>
+          VSync
+        </label>
+      </div>
+      <div>
+        <label for = 'fov'>
+          FOV:
+          <input type = 'text' id = 'fov'>
+        </label>
+        <label for = 'fov_wheel'>
+          <input type = 'checkbox' id = 'fov_wheel'>
+          MouseWhl to Adjust
+        </label>
+      </div>
+      <label for = 'x'>
+        X:
+        <input type = 'text' id = 'x'>
+      </label>
+      <label for = 'y'>
+        Y:
+        <input type = 'text' id = 'y'>
+      </label>
+      <label for = 'z'>
+        Z:
+        <input type = 'text' id = 'z'>
+      </label>
+      <label for = 'elev'>
+        Elev:
+        <input type = 'text' id = 'elev'>
+        &deg;
+      </label>
+      <label for = 'azim'>
+        Azim:
+        <input type = 'text' id = 'azim'>
+        &deg;
+      </label>
+      <button onclick = 'resetCoords();'>Reset Coords</button>
+      <label for = 'paused'>
+        <input type = 'checkbox' id = 'paused'>
+        Paused
+      </label>
       <button id = 'close_btn' onclick = 'closeSettings();'>Close</button>
     </div>
     
@@ -25,6 +77,9 @@
     <script src = 'lib/linear_algebra/main.js'></script>
     <script src = 'lib/math_convenience.js'></script>
     <script src = 'ui.js'></script>
+    <script src = 'main_vars.js'></script>
+    <script src = 'main_js.js'></script>
+    <script src = 'main_shader.js'></script>
     <script src = 'main.js'></script>
   </body>
 </html>
