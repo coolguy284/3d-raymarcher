@@ -1,1 +1,9 @@
-fix cuboid raymarching / distance estimate bug visible near edges
+fix normal calculation on big cuboid (raymarching / distance estimate bug visible near edges)
+add multiplier (default 1) for raymarch step size
+add button for theatrical view (no stats at top left, no settings at bottom right)
+add button for take picture
+add support for changing strength distance scaling exponent of black hole
+add select for many scene support
+
+scale canvas image by devicepixelratio
+add "take picture" button that creates a new shader canvas and renders image at full res or even 4k, saves image, then closes
